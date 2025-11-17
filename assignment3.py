@@ -30,10 +30,13 @@ class Queue:
         if(self.head.next != self.tail):
             val = self.head.next.value
             self.head.next = self.head.next.next
+            self.head.next.prev = self.head
             return val
         else:
             return None
     def append(self, value):
+        if(value == None):
+            return
         newNode = QueueNode(value)
         newNode.next = self.tail
         newNode.prev = self.tail.prev
@@ -58,34 +61,44 @@ def min_steps_flood_escape(grid: list[str]) -> int:
     # Your code here :)
     waterQueue = Queue()
     distanceQueue = Queue()
-    tileDict = {}
+    tileGrid = []
     max_x = len(grid)
     max_y = len(grid[0])
-    shelter_location = ""
+    for i in range(max_x):
+        tileGrid.append([])
+        for j in range(max_y):
+            tileGrid[i].append(Node("L"))
+    shelter_location_x = 0
+    shelter_location_y = 0
     #populates the dictionary with node objects
     for i in range(len(grid)):
         for j in range(len(grid[i])):
-            tileDict[str(i) + ":" + str(j)] = Node(grid[i][j], -1, -1, i, j)
+            tileGrid[i][j] = Node(grid[i][j], -1, -1, i, j)
             if(grid[i][j] == "I"):
-                distanceQueue.append(str(i) + ":" + str(j))
-                tileDict[str(i) + ":" + str(j)].reach_turn = 0
+                distanceQueue.append((i, j))
+                tileGrid[i][j].reach_turn = 0
             if(grid[i][j] == "W"):
-                waterQueue.append(str(i) + ":" + str(j))
-                tileDict[str(i) + ":" + str(j)].flood_turn = 0
+                waterQueue.append((i, j))
+                tileGrid[i][j].flood_turn = 0
             if(grid[i][j] == "S"):
-                shelter_location = str(i) + ":" + str(j)
+                shelter_location_x = i
+                shelter_location_y = j
+
+    
+
 
     #simulates the water spread
     endOfQueueReach = False
     while not endOfQueueReach:
         value = waterQueue.pop()
         if(value != None):
-            current_node = tileDict[value]
+            current_node = tileGrid[value[0]][value[1]]
             #attempts to flood every tile touching the current one
-            flood_direction(waterQueue, current_node, tileDict, -1, 0, max_x, max_y)
-            flood_direction(waterQueue, current_node, tileDict, 1, 0, max_x, max_y)
-            flood_direction(waterQueue, current_node, tileDict, 0, 1, max_x, max_y)
-            flood_direction(waterQueue, current_node, tileDict, 0, -1, max_x, max_y)
+            
+            waterQueue.append(flood_direction(current_node, tileGrid, -1, 0, max_x, max_y))
+            waterQueue.append(flood_direction(current_node, tileGrid, 1, 0, max_x, max_y))
+            waterQueue.append(flood_direction(current_node, tileGrid, 0, 1, max_x, max_y))
+            waterQueue.append(flood_direction(current_node, tileGrid, 0, -1, max_x, max_y))
         else:
             endOfQueueReach = True
     #simulates the movement of the player
@@ -93,22 +106,28 @@ def min_steps_flood_escape(grid: list[str]) -> int:
     while not endOfQueueReach:
         value = distanceQueue.pop()
         if(value != None):
-            current_node = tileDict[value]
+            current_node = tileGrid[value[0]][value[1]]
             #attempts to move every direction touching the current tile
-            move_direction(distanceQueue, current_node, tileDict, -1, 0, max_x, max_y)
-            move_direction(distanceQueue, current_node, tileDict, 1, 0, max_x, max_y)
-            move_direction(distanceQueue, current_node, tileDict, 0, 1, max_x, max_y)
-            move_direction(distanceQueue, current_node, tileDict, 0, -1, max_x, max_y)
+            distanceQueue.append(move_direction(current_node, tileGrid, -1, 0, max_x, max_y))
+            distanceQueue.append(move_direction(current_node, tileGrid, 1, 0, max_x, max_y))
+            distanceQueue.append(move_direction(current_node, tileGrid, 0, 1, max_x, max_y))
+            distanceQueue.append(move_direction(current_node, tileGrid, 0, -1, max_x, max_y))
         else:
             endOfQueueReach = True
 
-    return tileDict[shelter_location].reach_turn
 
-def move_direction(distanceQueue, currentNode, tileDict, xDir, yDir, max_x, max_y):
+    '''
+    for i in range(max_x):
+        for j in range(max_y):
+            print("Node:" + str(i) + ":" + str(j) + " State:" + "Water Turn: " + str(tileGrid[i][j].flood_turn) + " Reach Turn: " + str(tileGrid[i][j].reach_turn))
+    '''
+    return tileGrid[shelter_location_x][shelter_location_y].reach_turn
+
+def move_direction(currentNode, tileGrid, xDir, yDir, max_x, max_y):
     #checks to see if the target tile is on the board
-    if(currentNode.x + xDir < max_x and currentNode.x + xDir > 0):
-        if(currentNode.y + yDir < max_y and currentNode.y + yDir > 0):
-            target_node = tileDict[str(currentNode.x + xDir) + ":" + str(currentNode.y + yDir)]
+    if(currentNode.x + xDir < max_x and currentNode.x + xDir >= 0):
+        if(currentNode.y + yDir < max_y and currentNode.y + yDir >= 0):
+            target_node = tileGrid[currentNode.x + xDir][currentNode.y + yDir]
             nodeFlooded = False
 
             if(target_node.flood_turn != -1 and target_node.flood_turn <= currentNode.reach_turn + 1):
@@ -117,24 +136,28 @@ def move_direction(distanceQueue, currentNode, tileDict, xDir, yDir, max_x, max_
             #checks to see if the target tile is floodable ie not a shelter, rock, and hasn't already been flooded
             if(target_node.reach_turn == -1 and not nodeFlooded):
                 #floods the tile and stores the turn that it will be flooded
-                tileDict[str(currentNode.x + xDir) + ":" + str(currentNode.y + yDir)].flood_turn = currentNode.flood_turn + 1
+                
+                tileGrid[currentNode.x + xDir][currentNode.y + yDir].reach_turn = currentNode.reach_turn + 1
                 #adds the tile to the flood queue
-                distanceQueue.append(str(currentNode.x + xDir) + ":" + str(currentNode.y + yDir))
+                return (currentNode.x + xDir, currentNode.y + yDir)
+    return None
 
-def flood_direction(waterQueue, currentNode, tileDict, xDir, yDir, max_x, max_y):
+def flood_direction(currentNode, tileGrid, xDir, yDir, max_x, max_y):
     #checks to see if the target tile is on the board
-    if(currentNode.x + xDir < max_x and currentNode.x + xDir > 0):
-        if(currentNode.y + yDir < max_y and currentNode.y + yDir > 0):
-            target_node = tileDict[str(currentNode.x + xDir) + ":" + str(currentNode.y + yDir)]
+    if((currentNode.x + xDir) < max_x and (currentNode.x + xDir) >= 0):
+        if((currentNode.y + yDir) < max_y and (currentNode.y + yDir) >= 0):
+            
+            target_node = tileGrid[currentNode.x + xDir][currentNode.y + yDir]
             #checks to see if the target tile is floodable ie not a shelter, rock, and hasn't already been flooded
-            if((target_node.value != "S" or target_node.value != "R") and target_node.flood_turn == -1):
+            if((target_node.value != "S" and target_node.value != "R") and target_node.flood_turn == -1):
                 #floods the tile and stores the turn that it will be flooded
-                tileDict[str(currentNode.x + xDir) + ":" + str(currentNode.y + yDir)].flood_turn = currentNode.flood_turn + 1
+                tileGrid[currentNode.x + xDir][currentNode.y + yDir].flood_turn = currentNode.flood_turn + 1
                 #adds the tile to the flood queue
-                waterQueue.append(str(currentNode.x + xDir) + ":" + str(currentNode.y + yDir))
+                return (currentNode.x + xDir, currentNode.y + yDir)
+    return None
 
 print(min_steps_flood_escape(["ILLW", "LLRR", "LLLL", "LLLS"]))
-
+print(min_steps_flood_escape(["ILLW", "LRRL", "LRLL", "LLLS"]))
 
 '''
 MyQueue = Queue()
