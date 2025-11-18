@@ -156,8 +156,8 @@ def flood_direction(currentNode, tileGrid, xDir, yDir, max_x, max_y):
                 return (currentNode.x + xDir, currentNode.y + yDir)
     return None
 
-print(min_steps_flood_escape(["ILLW", "LLRR", "LLLL", "LLLS"]))
-print(min_steps_flood_escape(["ILLW", "LRRL", "LRLL", "LLLS"]))
+#print(min_steps_flood_escape(["ILLW", "LLRR", "LLLL", "LLLS"]))
+#print(min_steps_flood_escape(["ILLW", "LRRL", "LRLL", "LLLS"]))
 
 '''
 MyQueue = Queue()
