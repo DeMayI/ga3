@@ -16,53 +16,96 @@ Our algorithm is designed to solve the hypothetical problem of escaping from a f
 On each turn:
 \begin{itemize}
     \item The player may move one cell on the grid in any direction, as long as there is a rock, non-flooded land cell, or shelter on that square.
-    \item Then water spreads simultaneously to all possible
+    \item Then water spreads simultaneously to all adjacent non-flooded land tiles
     \end{itemize}
 \subsection{The algorithm}
+
+Our \textsc{min\_steps\_flood\_escape} algorithm determines the minimum number
+of time steps required for a player to escape from a flooding grid. The algorithm proceeds in two
+major phases:
+\begin{itemize}
+    \item computing the earliest time at which each cell becomes flooded,
+    \item computing the earliest time at which the player can reach each cell
+    without being overtaken by water.
+    \end{itemize}
+
+\subsection*{Flood Simulation Phase}
+
+We begin by constructing a two–dimensional array \texttt{tileGrid}, where each
+entry stores the state of a cell (rock, empty, player start, or water
+source), together with two initially unset time fields: \texttt{flood\_turn}
+and \texttt{reach\_turn}. All coordinates containing water are inserted into
+a queue \texttt{waterQueue}, and their \texttt{flood\_turn} fields are set to
+zero.
+The flood spreads using a breadth–first search. At each step we remove a cell
+from the queue and attempt to flood each of its four neighbors. A neighbor is
+flooded only if it is within bounds, not a rock, and has not previously been
+flooded. The neighbor’s \texttt{flood\_turn} is set to one greater than the
+current cell’s value, and the neighbor is pushed into the queue. When the
+queue becomes empty, every cell either records the earliest time water reaches
+it or remains unflooded.
+
+\subsection*{Movement Simulation Phase}
+
+After computing flood times, we determine how quickly the player can reach each
+cell. The player’s starting location is inserted into a second queue
+\texttt{distanceQueue}, with its \texttt{reach\_turn} set to zero.
+Again using breadth–first search, we repeatedly remove a cell from the queue
+and examine its four neighboring cells. The player may move into a neighbor if
+it is within bounds, is a cell (not outside grid), has not been visited before, and is not flooded at or before the turn the player would arrive. If the move is legal, the neighbor’s \texttt{reach\_turn} becomes one greater than the current cell’s
+value, and the neighbor is added to the queue. If the player reaches the shelter cell before it floods, the algorithm terminates and reports the minimum number of steps required to escape. If the queue becomes empty without reaching a shelter, then no escape path exists.
+
+\subsection*{Output}
+
+The algorithm returns either the minimum number of steps needed for the player
+to reach the shelter or reports that escape is impossible. This result is
+determined by comparing the player's reachable cells with the precomputed flood
+times for each cell.
+
 
 \section{Algorithm Correctness}
 
 \section{Time Complexity Analysis}
 The running time of the \textsc{min\_steps\_flood\_escape} algorithm depends on the
-number of cells in the board and the cost of processing each cell.  For
+number of cells in the board and the cost of processing each cell. For
 simplicity, let the grid be an $n \times n$ board, so there are $n^2$ cells in
 total.
 
 The algorithm first allocates and initializes the two–dimensional array
-\texttt{tileGrid}.  This is done by two nested loops that touch every cell once,
+\texttt{tileGrid}. This is done by two nested loops that touch every cell once,
 so the cost of this step is
 \[
-  T_1(n) = \Theta(n^2).
+ T_1(n) = \Theta(n^2).
 \]
 
-Next, we simulate the spread of the flood.  All initial water cells are
+Next, we simulate the spread of the flood. All initial water cells are
 inserted into the queue \texttt{waterQueue}, and then we repeatedly remove a
 cell from the front of the queue and attempt to flood each of its four
-neighbors via calls to \texttt{flood\_direction}.  Each cell can be enqueued at
+neighbors via calls to \texttt{flood\_direction}. Each cell can be enqueued at
 most once, because its field \texttt{flood\_turn} is set the first time it is
-reached and checked on all later calls.  Processing one cell performs a
+reached and checked on all later calls. Processing one cell performs a
 constant amount of work (at most four bound checks and field updates).
 Therefore the total work of the flood simulation is
 \[
-  T_2(n) = \Theta(n^2).
+ T_2(n) = \Theta(n^2).
 \]
 
 After all flood times have been computed, we perform a breadth–first search for
 the player’s movement using the queue \texttt{distanceQueue} and the helper
-\texttt{move\_direction}.  The same argument applies: each cell is inserted
+\texttt{move\_direction}. The same argument applies: each cell is inserted
 into the queue at most once (its \texttt{reach\_turn} is set on first visit and
 never changed), and processing a cell again does only constant work while
-considering up to four neighbors.  Thus, the total work of the movement
+considering up to four neighbors. Thus, the total work of the movement
 simulation is
 \[
-  T_3(n) = \Theta(n^2).
+ T_3(n) = \Theta(n^2).
 \]
 
 Adding these contributions, the overall running time satisfies
 \[
-  T(n) = T_1(n) + T_2(n) + T_3(n)
-       = \Theta(n^2) + \Theta(n^2) + \Theta(n^2)
-       = \Theta(n^2).
+ T(n) = T_1(n) + T_2(n) + T_3(n)
+    = \Theta(n^2) + \Theta(n^2) + \Theta(n^2)
+    = \Theta(n^2).
 \]
 Hence, the algorithm runs in quadratic time in the dimension of the grid.
 
