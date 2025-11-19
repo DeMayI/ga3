@@ -1,0 +1,72 @@
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage[ruled,vlined]{algorithm2e}
+
+\title{CS 325 Group Assignment 3}
+\author{Isaac DeMay, Graham Brown, Carter Cripe}
+\date{November 19th, 2025}
+
+\begin{document}
+
+\maketitle
+
+\section{Algorithm Description}
+\subsection{The problem}
+Our algorithm is designed to solve the hypothetical problem of escaping from a flooding square island. We are given an $n\times n$ grid representing the island, and a starting position, $I$. Our goal is to make it to the one 'Shelter' space (represented by $S$) before a flood blocks our way. The rest of the grid is made up of symbols: $L$ representing land initially dry, but may flood later, $R$ representing rock, which blocks spread of water, $W$, an initial water source.\\\\
+On each turn:
+\begin{itemize}
+    \item The player may move one cell on the grid in any direction, as long as there is a rock, non-flooded land cell, or shelter on that square.
+    \item Then water spreads simultaneously to all possible
+    \end{itemize}
+\subsection{The algorithm}
+
+\section{Algorithm Correctness}
+
+\section{Time Complexity Analysis}
+The running time of the \textsc{min\_steps\_flood\_escape} algorithm depends on the
+number of cells in the board and the cost of processing each cell.  For
+simplicity, let the grid be an $n \times n$ board, so there are $n^2$ cells in
+total.
+
+The algorithm first allocates and initializes the two–dimensional array
+\texttt{tileGrid}.  This is done by two nested loops that touch every cell once,
+so the cost of this step is
+\[
+  T_1(n) = \Theta(n^2).
+\]
+
+Next, we simulate the spread of the flood.  All initial water cells are
+inserted into the queue \texttt{waterQueue}, and then we repeatedly remove a
+cell from the front of the queue and attempt to flood each of its four
+neighbors via calls to \texttt{flood\_direction}.  Each cell can be enqueued at
+most once, because its field \texttt{flood\_turn} is set the first time it is
+reached and checked on all later calls.  Processing one cell performs a
+constant amount of work (at most four bound checks and field updates).
+Therefore the total work of the flood simulation is
+\[
+  T_2(n) = \Theta(n^2).
+\]
+
+After all flood times have been computed, we perform a breadth–first search for
+the player’s movement using the queue \texttt{distanceQueue} and the helper
+\texttt{move\_direction}.  The same argument applies: each cell is inserted
+into the queue at most once (its \texttt{reach\_turn} is set on first visit and
+never changed), and processing a cell again does only constant work while
+considering up to four neighbors.  Thus, the total work of the movement
+simulation is
+\[
+  T_3(n) = \Theta(n^2).
+\]
+
+Adding these contributions, the overall running time satisfies
+\[
+  T(n) = T_1(n) + T_2(n) + T_3(n)
+       = \Theta(n^2) + \Theta(n^2) + \Theta(n^2)
+       = \Theta(n^2).
+\]
+Hence, the algorithm runs in quadratic time in the dimension of the grid.
+
+
+
+
+\end{document}
