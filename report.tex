@@ -1,6 +1,9 @@
 \documentclass{article}
 \usepackage{graphicx}
-\usepackage[ruled,vlined]{algorithm2e}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{amsmath}
+
 
 \title{CS 325 Group Assignment 3}
 \author{Isaac DeMay, Graham Brown, Carter Cripe}
@@ -21,8 +24,8 @@ On each turn:
 \subsection{The algorithm}
 
 Our \textsc{min\_steps\_flood\_escape} algorithm determines the minimum number
-of time steps required for a player to escape from a flooding grid. The algorithm proceeds in two
-major phases:
+of time steps required for a player to escape from a flooding grid. As an input, we are given a $n\times n$ grid with the symbols already filled out, (see 'The problem' for description of this grid). \\\\
+The algorithm proceeds in two major phases:
 \begin{itemize}
     \item computing the earliest time at which each cell becomes flooded,
     \item computing the earliest time at which the player can reach each cell
@@ -33,17 +36,77 @@ major phases:
 
 We begin by constructing a two–dimensional array \texttt{tileGrid}, where each
 entry stores the state of a cell (rock, empty, player start, or water
-source), together with two initially unset time fields: \texttt{flood\_turn}
+source) (basically recreating our input), together with two initially unset time fields: \texttt{flood\_turn}
 and \texttt{reach\_turn}. All coordinates containing water are inserted into
 a queue \texttt{waterQueue}, and their \texttt{flood\_turn} fields are set to
-zero.
+zero.\\\\
+Psuedocode: \\
+
+\begin{algorithm}[H]
+\caption{Initialization of \texttt{tileGrid} and \texttt{waterQueue}}
+\begin{algorithmic}[1]
+
+\State Create an empty two--dimensional array $\texttt{tileGrid}[0 \ldots n-1][0 \ldots n-1]$
+\State Create an empty queue $\texttt{waterQueue}$
+
+\For{$i \gets 0$ \textbf{to} $n-1$}
+    \For{$j \gets 0$ \textbf{to} $n-1$}
+
+        \State Read the character \texttt{c} from the input grid at position $(i,j)$
+        \State Create a new node \texttt{n} with fields:
+            \Statex \hspace{2em} \texttt{n.value} $\gets$ \texttt{c}
+            \Statex \hspace{2em} \texttt{n.flood\_turn} $\gets - 1$ 
+            \Statex \hspace{2em} \texttt{n.reach\_turn} $\gets -1$
+            \Statex \hspace{2em} \texttt{n.x} $\gets i$, \; \texttt{n.y} $\gets j$
+        \State $\texttt{tileGrid}[i][j] \gets \texttt{n}$
+
+        \If{\texttt{c} is a water source}
+            \State \texttt{n.flood\_turn} $\gets 0$
+            \State Enqueue $(i,j)$ into $\texttt{waterQueue}$
+        \EndIf
+    \EndFor
+\EndFor
+
+\end{algorithmic}
+\end{algorithm}
 The flood spreads using a breadth–first search. At each step we remove a cell
 from the queue and attempt to flood each of its four neighbors. A neighbor is
 flooded only if it is within bounds, not a rock, and has not previously been
 flooded. The neighbor’s \texttt{flood\_turn} is set to one greater than the
 current cell’s value, and the neighbor is pushed into the queue. When the
 queue becomes empty, every cell either records the earliest time water reaches
-it or remains unflooded.
+it or remains unflooded.\\\\
+Psuedocode:
+\begin{algorithm}[H]
+\caption{Flood Propagation Using Breadth--First Search}
+\begin{algorithmic}[1]
+
+\While{$\texttt{waterQueue}$ is not empty}
+
+    \State Dequeue a cell $(x,y)$ from $\texttt{waterQueue}$
+    \State Let $u \gets \texttt{tileGrid}[x][y]$
+
+    \For{each direction $(\Delta x, \Delta y)$ in $\{(-1,0), (1,0), (0,1), (0,-1)\}$}
+
+        \State $x' \gets x + \Delta x$, \quad $y' \gets y + \Delta y$
+
+        \If{$(x',y')$ is within bounds}
+            \State Let $v \gets \texttt{tileGrid}[x'][y']$
+
+            \If{$v.\texttt{value}$ is not a rock \textbf{and} $v.\texttt{flood\_turn} = -1$}
+                \State $v.\texttt{flood\_turn} \gets u.\texttt{flood\_turn} + 1$
+                \State Enqueue $(x',y')$ into $\texttt{waterQueue}$
+            \EndIf
+
+        \EndIf
+
+    \EndFor
+
+\EndWhile
+
+\end{algorithmic}
+\end{algorithm}
+
 
 \subsection*{Movement Simulation Phase}
 
@@ -53,7 +116,51 @@ cell. The player’s starting location is inserted into a second queue
 Again using breadth–first search, we repeatedly remove a cell from the queue
 and examine its four neighboring cells. The player may move into a neighbor if
 it is within bounds, is a cell (not outside grid), has not been visited before, and is not flooded at or before the turn the player would arrive. If the move is legal, the neighbor’s \texttt{reach\_turn} becomes one greater than the current cell’s
-value, and the neighbor is added to the queue. If the player reaches the shelter cell before it floods, the algorithm terminates and reports the minimum number of steps required to escape. If the queue becomes empty without reaching a shelter, then no escape path exists.
+value, and the neighbor is added to the queue. If the player reaches the shelter cell before it floods, the algorithm terminates and reports the minimum number of steps required to escape. If the queue becomes empty without reaching a shelter, then no escape path exists.\\\\
+Psuedocode:
+
+\begin{algorithm}[H]
+\caption{Player Movement Using Breadth--First Search}
+\begin{algorithmic}[1]
+
+\State Insert the player’s starting cell $(s_x, s_y)$ into $\texttt{distanceQueue}$
+\State $\texttt{tileGrid}[s_x][s_y].\texttt{reach\_turn} \gets 0$
+
+\While{$\texttt{distanceQueue}$ is not empty}
+
+    \State Dequeue a cell $(x,y)$ from $\texttt{distanceQueue}$
+    \State Let $u \gets \texttt{tileGrid}[x][y]$
+
+    \If{$u$ is the shelter cell}
+        \State \Return $u.\texttt{reach\_turn}$ \Comment{player escapes}
+    \EndIf
+
+    \For{each direction $(\Delta x, \Delta y)$ in $\{(-1,0), (1,0), (0,1), (0,-1)\}$}
+
+        \State $x' \gets x + \Delta x$, \quad $y' \gets y + \Delta y$
+
+        \If{$(x',y')$ is within bounds}
+            \State Let $v \gets \texttt{tileGrid}[x'][y']$
+
+            \State Compute arrival time $t \gets u.\texttt{reach\_turn} + 1$
+            \State Let $\textit{flooded} \gets (v.\texttt{flood\_turn} \neq -1$ \textbf{and} $v.\texttt{flood\_turn} \le t)$
+
+            \If{$v.\texttt{value}$ is a walkable cell \textbf{and} $v.\texttt{reach\_turn} = -1$ \textbf{and not} $\textit{flooded}$}
+                \State $v.\texttt{reach\_turn} \gets t$
+                \State Enqueue $(x',y')$ into $\texttt{distanceQueue}$
+            \EndIf
+
+        \EndIf
+
+    \EndFor
+
+\EndWhile
+
+\State \Return ``no escape exists''
+
+\end{algorithmic}
+\end{algorithm}
+
 
 \subsection*{Output}
 
